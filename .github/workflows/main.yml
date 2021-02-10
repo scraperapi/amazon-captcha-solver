@@ -1,0 +1,31 @@
+name: Main - Build and Deploy
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build Tag Push
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: ${{ github.sha }}
+      ENVIRONMENT: production
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    - name: Login to DigitalOcean Registry
+      run: |
+        doctl registry login
+    - name: Build container
+      run: |
+        docker build --build-arg=PYTHON_ENV=$ENVIRONMENT -t amazon-captcha-solver:$IMAGE_TAG -f Dockerfile .
+    - name: Tag container
+      run: |
+        docker tag amazon-captcha-solver:$IMAGE_TAG registry.digitalocean.com/scraperapi/amazon-captcha-solver:$IMAGE_TAG
+    - name: Push container
+      run: |
+        docker push registry.digitalocean.com/scraperapi/amazon-captcha-solver:$IMAGE_TAG
